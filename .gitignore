@@ -1,30 +1,6 @@
-# OS and editor files
-.DS_Store
-.idea/
-
-# Python environment and cache
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-
-# Local environment files
-.env
-.env.*
-
-# Project data and generated outputs
-**/data/
-**/plots/
-
-# Unnecessary document exports
-docs/
-documentation/
-*.pdf
-*.doc
-*.docx
-*.ppt
-*.pptx
-
-# Logs
-*.log
+# Keep the public repo surface minimal.
+# Everything is ignored by default except the site entry point and README.
+/*
+!/.gitignore
+!/README.md
+!/index.html
