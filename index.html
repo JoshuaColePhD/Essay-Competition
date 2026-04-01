@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Essay Score Leaderboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f3efe5;
+      --panel: rgba(255, 252, 247, 0.88);
+      --panel-strong: rgba(255, 250, 242, 0.96);
+      --ink: #1e2b39;
+      --muted: #5f6c7b;
+      --accent: #b25935;
+      --accent-soft: rgba(178, 89, 53, 0.14);
+      --accent-strong: #8f4323;
+      --line: rgba(30, 43, 57, 0.12);
+      --success: #246b49;
+      --error: #962f2f;
+      --shadow: 0 24px 70px rgba(31, 37, 44, 0.12);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(178, 89, 53, 0.16), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(47, 87, 120, 0.14), transparent 28%),
+        linear-gradient(135deg, #f7f1e7 0%, #efe7d8 42%, #f6f2ea 100%);
+      padding: 32px 18px 48px;
+    }
+
+    .page-shell {
+      width: min(1140px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+
+    .hero,
+    .panel {
+      backdrop-filter: blur(14px);
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+      padding: 38px 38px 32px;
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .hero::before {
+      width: 220px;
+      height: 220px;
+      right: -42px;
+      top: -72px;
+      background: radial-gradient(circle, rgba(178, 89, 53, 0.18), transparent 68%);
+    }
+
+    .hero::after {
+      width: 280px;
+      height: 280px;
+      left: -88px;
+      bottom: -138px;
+      background: radial-gradient(circle, rgba(39, 73, 105, 0.16), transparent 70%);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 4.6rem);
+      max-width: 11ch;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+      max-width: 760px;
+    }
+
+    .hero-copy p {
+      margin: 0;
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .hero-badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(30, 43, 57, 0.08);
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .panel {
+      border-radius: var(--radius-lg);
+      padding: 28px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .control-card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      min-height: 270px;
+    }
+
+    .control-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .drop-zone {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      gap: 10px;
+      border: 2px dashed rgba(178, 89, 53, 0.34);
+      border-radius: 20px;
+      padding: 34px 18px;
+      min-height: 170px;
+      background:
+        linear-gradient(180deg, rgba(178, 89, 53, 0.06), rgba(178, 89, 53, 0)),
+        #fffdf8;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      cursor: pointer;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.is-active {
+      transform: translateY(-2px);
+      border-color: rgba(178, 89, 53, 0.7);
+      background:
+        linear-gradient(180deg, rgba(178, 89, 53, 0.12), rgba(178, 89, 53, 0.02)),
+        #fffdf8;
+    }
+
+    .drop-zone strong {
+      font-size: 1.05rem;
+    }
+
+    .drop-zone span {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      transition: transform 160ms ease, opacity 160ms ease, background 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.62;
+      cursor: wait;
+      transform: none;
+    }
+
+    .primary-button,
+    .secondary-button {
+      padding: 13px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+    }
+
+    .primary-button {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(143, 67, 35, 0.24);
+    }
+
+    .secondary-button {
+      background: rgba(30, 43, 57, 0.06);
+      color: var(--ink);
+    }
+
+    .url-form {
+      display: grid;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .url-input {
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fffdf9;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .url-input:focus {
+      border-color: rgba(178, 89, 53, 0.62);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .status-banner {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(30, 43, 57, 0.05);
+      color: var(--ink);
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      border: 1px solid transparent;
+    }
+
+    .status-banner.info {
+      background: rgba(30, 43, 57, 0.05);
+      border-color: rgba(30, 43, 57, 0.06);
+    }
+
+    .status-banner.success {
+      background: rgba(36, 107, 73, 0.08);
+      border-color: rgba(36, 107, 73, 0.16);
+      color: var(--success);
+    }
+
+    .status-banner.error {
+      background: rgba(150, 47, 47, 0.08);
+      border-color: rgba(150, 47, 47, 0.14);
+      color: var(--error);
+    }
+
+    .results-panel[hidden],
+    .empty-panel[hidden] {
+      display: none;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .section-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .meta-pill {
+      background: rgba(30, 43, 57, 0.06);
+      border: 1px solid rgba(30, 43, 57, 0.08);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .top-three-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .rank-card {
+      position: relative;
+      overflow: hidden;
+      padding: 22px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 239, 228, 0.94));
+      border: 1px solid rgba(30, 43, 57, 0.09);
+      box-shadow: 0 18px 34px rgba(30, 43, 57, 0.08);
+      animation: rise-in 420ms ease both;
+    }
+
+    .rank-card::after {
+      content: "";
+      position: absolute;
+      right: -36px;
+      top: -42px;
+      width: 150px;
+      height: 150px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(178, 89, 53, 0.12), transparent 72%);
+      pointer-events: none;
+    }
+
+    .rank-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 1.15rem;
+      margin-bottom: 18px;
+    }
+
+    .rank-card h3 {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+      max-width: 12ch;
+      overflow-wrap: anywhere;
+    }
+
+    .rank-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .rank-stats {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .rank-stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: baseline;
+      padding-top: 10px;
+      border-top: 1px solid rgba(30, 43, 57, 0.08);
+    }
+
+    .rank-stat-label {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .rank-stat-value {
+      font-weight: 800;
+      font-size: 1.08rem;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin: 22px 0 26px;
+    }
+
+    .insight-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(30, 43, 57, 0.08);
+    }
+
+    .insight-card strong {
+      display: block;
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+    }
+
+    .insight-card span {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .chart-panel {
+      margin: 0 0 26px;
+      padding: 22px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 238, 226, 0.94));
+      border: 1px solid rgba(30, 43, 57, 0.09);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .chart-header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .chart-note {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(30, 43, 57, 0.06);
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .bar-chart {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: end;
+      min-height: 340px;
+      padding: 26px 18px 18px;
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(178, 89, 53, 0.06), rgba(255, 255, 255, 0.76)),
+        repeating-linear-gradient(
+          to top,
+          rgba(30, 43, 57, 0.05) 0,
+          rgba(30, 43, 57, 0.05) 1px,
+          transparent 1px,
+          transparent 56px
+        );
+      border: 1px solid rgba(30, 43, 57, 0.08);
+    }
+
+    .chart-column {
+      display: grid;
+      gap: 12px;
+      align-items: end;
+      justify-items: center;
+      min-height: 100%;
+    }
+
+    .chart-value {
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--accent-strong);
+    }
+
+    .chart-bar-wrap {
+      width: min(112px, 100%);
+      height: 220px;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+    }
+
+    .chart-bar {
+      width: 100%;
+      min-height: 22px;
+      border-radius: 20px 20px 10px 10px;
+      background: linear-gradient(180deg, #d07c55 0%, #b25935 48%, #8f4323 100%);
+      box-shadow:
+        0 18px 26px rgba(143, 67, 35, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.32);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-bar::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 42%);
+      pointer-events: none;
+    }
+
+    .chart-label {
+      width: 100%;
+      text-align: center;
+    }
+
+    .chart-label strong,
+    .chart-label span {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+
+    .chart-label strong {
+      font-size: 0.98rem;
+    }
+
+    .chart-label span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .table-wrap {
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(30, 43, 57, 0.09);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    thead th {
+      text-align: left;
+      background: rgba(30, 43, 57, 0.06);
+      font-size: 0.86rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 15px 16px;
+    }
+
+    tbody td {
+      padding: 15px 16px;
+      border-top: 1px solid rgba(30, 43, 57, 0.08);
+      color: var(--ink);
+    }
+
+    tbody tr:nth-child(odd) {
+      background: rgba(255, 255, 255, 0.46);
+    }
+
+    .empty-panel {
+      text-align: center;
+      padding: 44px 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(247, 241, 231, 0.9));
+    }
+
+    .empty-panel p {
+      margin: 12px auto 0;
+      max-width: 52ch;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .subtle-note {
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .controls-grid,
+      .top-three-grid,
+      .insight-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .chart-header {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .bar-chart {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 18px 12px 28px;
+      }
+
+      .hero,
+      .panel {
+        padding: 22px;
+      }
+
+      .control-card,
+      .rank-card {
+        padding: 18px;
+      }
+
+      .hero-badges,
+      .button-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .meta-pill {
+        white-space: normal;
+      }
+
+      .chart-panel {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Essay Competition Tool</p>
+        <h1>Find the top three scores in seconds.</h1>
+        <p>
+          Drop in a spreadsheet or paste a public Google Sheets link and this page will
+          calculate the highest-ranked essays or students automatically. It mirrors your
+          current workflow by averaging scores across each entry, then ranking the results.
+        </p>
+        <div class="hero-badges">
+          <span class="hero-badge">Drag and drop CSV, XLSX, or XLS</span>
+          <span class="hero-badge">Paste a Google Sheets URL</span>
+          <span class="hero-badge">Auto-detect score columns</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="controls-grid">
+        <article class="control-card">
+          <div>
+            <p class="eyebrow">Option 1</p>
+            <h2>Upload a spreadsheet</h2>
+          </div>
+          <p>
+            Use the same exported files you already have. The page supports drag-and-drop and
+            standard file selection for `.csv`, `.xlsx`, and `.xls`.
+          </p>
+          <label class="drop-zone" id="dropZone" for="fileInput">
+            <strong>Drop your file here</strong>
+            <span>or click to browse for a spreadsheet</span>
+          </label>
+          <div class="button-row">
+            <button class="primary-button" id="browseButton" type="button">Choose file</button>
+            <span class="subtle-note">Best for exported Google Form responses and Excel files.</span>
+          </div>
+          <input
+            class="hidden-input"
+            id="fileInput"
+            type="file"
+            accept=".csv,.xlsx,.xls"
+          />
+        </article>
+
+        <article class="control-card">
+          <div>
+            <p class="eyebrow">Option 2</p>
+            <h2>Load a Google Sheet</h2>
+          </div>
+          <p>
+            Paste a shareable Google Sheets URL and the page will pull the data directly.
+            If the sheet is private, Google may block the request, so a CSV export is the safest fallback.
+          </p>
+          <form class="url-form" id="urlForm">
+            <input
+              class="url-input"
+              id="sheetsUrl"
+              type="url"
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              autocomplete="off"
+              inputmode="url"
+            />
+            <div class="button-row">
+              <button class="primary-button" id="loadUrlButton" type="submit">Load sheet</button>
+              <button class="secondary-button" id="clearButton" type="button">Clear results</button>
+            </div>
+          </form>
+          <p class="subtle-note">
+            Tip: share the sheet with “Anyone with the link” if you want the browser to load it directly.
+          </p>
+        </article>
+      </div>
+
+      <div aria-live="polite" class="status-banner info" id="statusBanner">
+        Waiting for a spreadsheet or Google Sheets link.
+      </div>
+    </section>
+
+    <section class="panel empty-panel" id="emptyPanel">
+      <h2>Leaderboard will appear here.</h2>
+      <p>
+        Once data is loaded, you will see the top three entries, the scoring method the page
+        detected, and a full ranked table of all students or essay IDs.
+      </p>
+    </section>
+
+    <section class="panel results-panel" id="resultsPanel" hidden>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Leaderboard</p>
+          <h2>Top three scores</h2>
+          <p id="resultsSummary"></p>
+        </div>
+        <div class="meta-pill" id="datasetMeta"></div>
+      </div>
+
+      <div class="top-three-grid" id="topThree"></div>
+
+      <div class="insight-grid" id="insightGrid"></div>
+
+      <section class="chart-panel" aria-labelledby="barGraphTitle">
+        <div class="chart-header">
+          <div>
+            <p class="eyebrow">Graph Panel</p>
+            <h3 id="barGraphTitle">Bar graph of average scores</h3>
+            <p id="chartSummary">Average criterion scores will be visualized here after data is loaded.</p>
+          </div>
+          <div class="chart-note" id="chartNote">Scaled to the highest current average</div>
+        </div>
+        <div class="bar-chart" id="barChart" role="img" aria-label="Bar graph of top-ranked average scores"></div>
+      </section>
+
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th id="entityColumnHeading">Student</th>
+                <th>Average Score</th>
+                <th id="secondaryScoreHeading">Per Criterion</th>
+                <th>Reviews Counted</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const dom = {};
+
+    const STATE = {
+      busy: false
+    };
+
+    function init() {
+      dom.dropZone = document.getElementById("dropZone");
+      dom.fileInput = document.getElementById("fileInput");
+      dom.browseButton = document.getElementById("browseButton");
+      dom.urlForm = document.getElementById("urlForm");
+      dom.sheetsUrl = document.getElementById("sheetsUrl");
+      dom.loadUrlButton = document.getElementById("loadUrlButton");
+      dom.clearButton = document.getElementById("clearButton");
+      dom.statusBanner = document.getElementById("statusBanner");
+      dom.resultsPanel = document.getElementById("resultsPanel");
+      dom.emptyPanel = document.getElementById("emptyPanel");
+      dom.datasetMeta = document.getElementById("datasetMeta");
+      dom.resultsSummary = document.getElementById("resultsSummary");
+      dom.topThree = document.getElementById("topThree");
+      dom.insightGrid = document.getElementById("insightGrid");
+      dom.barChart = document.getElementById("barChart");
+      dom.chartSummary = document.getElementById("chartSummary");
+      dom.chartNote = document.getElementById("chartNote");
+      dom.resultsBody = document.getElementById("resultsBody");
+      dom.entityColumnHeading = document.getElementById("entityColumnHeading");
+      dom.secondaryScoreHeading = document.getElementById("secondaryScoreHeading");
+
+      dom.browseButton.addEventListener("click", () => dom.fileInput.click());
+      dom.fileInput.addEventListener("change", handleFileSelection);
+      dom.urlForm.addEventListener("submit", handleUrlSubmit);
+      dom.clearButton.addEventListener("click", clearResults);
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dom.dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dom.dropZone.classList.add("is-active");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dom.dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dom.dropZone.classList.remove("is-active");
+        });
+      });
+
+      dom.dropZone.addEventListener("drop", (event) => {
+        const [file] = Array.from(event.dataTransfer.files || []);
+        if (file) {
+          void loadFile(file);
+        }
+      });
+    }
+
+    function ensureSpreadsheetLibrary() {
+      if (typeof XLSX === "undefined") {
+        throw new Error(
+          "The spreadsheet parser could not load. Refresh the page while connected to the internet."
+        );
+      }
+    }
+
+    function handleFileSelection(event) {
+      const [file] = Array.from(event.target.files || []);
+      if (file) {
+        void loadFile(file);
+      }
+    }
+
+    async function handleUrlSubmit(event) {
+      event.preventDefault();
+      const url = dom.sheetsUrl.value.trim();
+      if (!url) {
+        setStatus("Paste a Google Sheets URL first.", "error");
+        return;
+      }
+
+      await loadGoogleSheet(url);
+    }
+
+    async function loadFile(file) {
+      try {
+        setBusy(true);
+        setStatus("Reading spreadsheet...", "info");
+        ensureSpreadsheetLibrary();
+
+        const dataset = await parseFileToDataset(file);
+        const analysis = analyzeRows(dataset.rows);
+        renderResults(analysis, {
+          sourceName: file.name,
+          sourceDetail: dataset.sheetName ? `Sheet: ${dataset.sheetName}` : "Uploaded file"
+        });
+
+        setStatus(`Loaded ${file.name} successfully.`, "success");
+      } catch (error) {
+        showError(error);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function loadGoogleSheet(url) {
+      try {
+        setBusy(true);
+        setStatus("Loading Google Sheet...", "info");
+        ensureSpreadsheetLibrary();
+
+        const dataset = await parseGoogleSheetToDataset(url);
+        const analysis = analyzeRows(dataset.rows);
+        renderResults(analysis, {
+          sourceName: "Google Sheet",
+          sourceDetail: dataset.sourceDetail
+        });
+
+        setStatus("Google Sheet loaded successfully.", "success");
+      } catch (error) {
+        showError(error);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function parseFileToDataset(file) {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) {
+        throw new Error("This spreadsheet does not contain any sheets.");
+      }
+
+      const rows = sheetToRows(workbook.Sheets[sheetName]);
+      return { rows, sheetName };
+    }
+
+    async function parseGoogleSheetToDataset(url) {
+      const { sheetId, gid } = parseGoogleSheetUrl(url);
+      const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+
+      try {
+        const response = await fetch(exportUrl, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Google Sheets returned ${response.status}.`);
+        }
+
+        const csvText = await response.text();
+        if (/^\s*<!doctype html/i.test(csvText) || /^\s*<html/i.test(csvText)) {
+          throw new Error("Google returned a web page instead of sheet data.");
+        }
+
+        const workbook = XLSX.read(csvText, { type: "string" });
+        const rows = sheetToRows(workbook.Sheets[workbook.SheetNames[0]]);
+
+        return {
+          rows,
+          sourceDetail: `Tab gid ${gid} via CSV export`
+        };
+      } catch (exportError) {
+        const rows = await loadGoogleSheetViaGviz(sheetId, gid);
+        return {
+          rows,
+          sourceDetail: `Tab gid ${gid} via Google Visualization API`
+        };
+      }
+    }
+
+    function parseGoogleSheetUrl(url) {
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+      } catch (error) {
+        throw new Error("That does not look like a valid URL.");
+      }
+
+      const match = parsedUrl.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (!match) {
+        throw new Error("Paste a standard Google Sheets link from docs.google.com.");
+      }
+
+      const sheetId = match[1];
+      let gid = parsedUrl.searchParams.get("gid");
+
+      if (!gid && parsedUrl.hash) {
+        const hashMatch = parsedUrl.hash.match(/gid=(\d+)/);
+        gid = hashMatch ? hashMatch[1] : "";
+      }
+
+      return {
+        sheetId,
+        gid: gid || "0"
+      };
+    }
+
+    function loadGoogleSheetViaGviz(sheetId, gid) {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const previousGoogle = window.google;
+        const previousSetResponse =
+          window.google &&
+          window.google.visualization &&
+          window.google.visualization.Query &&
+          window.google.visualization.Query.setResponse;
+
+        function finish(callback, value) {
+          if (settled) {
+            return;
+          }
+
+          settled = true;
+          cleanup();
+          callback(value);
+        }
+
+        function cleanup() {
+          window.clearTimeout(timeoutId);
+          script.remove();
+
+          window.google = previousGoogle || window.google || {};
+          window.google.visualization = window.google.visualization || {};
+          window.google.visualization.Query = window.google.visualization.Query || {};
+
+          if (typeof previousSetResponse === "function") {
+            window.google.visualization.Query.setResponse = previousSetResponse;
+          } else {
+            delete window.google.visualization.Query.setResponse;
+          }
+        }
+
+        window.google = window.google || {};
+        window.google.visualization = window.google.visualization || {};
+        window.google.visualization.Query = window.google.visualization.Query || {};
+        window.google.visualization.Query.setResponse = (response) => {
+          if (!response || response.status !== "ok") {
+            const detailed =
+              response &&
+              Array.isArray(response.errors) &&
+              response.errors[0] &&
+              (response.errors[0].detailed_message || response.errors[0].message);
+
+            finish(
+              reject,
+              new Error(
+                detailed ||
+                  "Google could not share this sheet with the browser. Try a CSV export or make the sheet public."
+              )
+            );
+            return;
+          }
+
+          try {
+            finish(resolve, gvizTableToRows(response.table));
+          } catch (error) {
+            finish(reject, error);
+          }
+        };
+
+        const script = document.createElement("script");
+        const timeoutId = window.setTimeout(() => {
+          finish(
+            reject,
+            new Error(
+              "The Google Sheets request timed out. Make sure the tab is accessible, or upload a CSV instead."
+            )
+          );
+        }, 12000);
+
+        script.src =
+          `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${encodeURIComponent(gid)}` +
+          "&headers=1&tqx=out:json";
+        script.async = true;
+        script.onerror = () => {
+          finish(
+            reject,
+            new Error(
+              "This Google Sheet could not be loaded directly. If it is private, download it as CSV and upload the file instead."
+            )
+          );
+        };
+
+        document.head.appendChild(script);
+      });
+    }
+
+    function gvizTableToRows(table) {
+      if (!table || !Array.isArray(table.cols) || !Array.isArray(table.rows)) {
+        throw new Error("Google Sheets returned data in an unexpected format.");
+      }
+
+      const headers = table.cols.map((column, index) => {
+        return column.label || column.id || `Column ${index + 1}`;
+      });
+
+      return table.rows
+        .map((row) => {
+          const record = {};
+          headers.forEach((header, index) => {
+            const cell = row.c ? row.c[index] : null;
+            record[header] = readGvizCell(cell);
+          });
+          return record;
+        })
+        .filter((row) => hasVisibleValues(Object.values(row)));
+    }
+
+    function readGvizCell(cell) {
+      if (!cell) {
+        return "";
+      }
+
+      if (cell.v === null || typeof cell.v === "undefined") {
+        return cell.f || "";
+      }
+
+      return cell.v;
+    }
+
+    function sheetToRows(sheet) {
+      const rows = XLSX.utils.sheet_to_json(sheet, {
+        defval: "",
+        raw: true
+      });
+
+      if (!rows.length) {
+        throw new Error("No data rows were found in this spreadsheet.");
+      }
+
+      return rows.filter((row) => hasVisibleValues(Object.values(row)));
+    }
+
+    function hasVisibleValues(values) {
+      return values.some((value) => {
+        if (value === null || typeof value === "undefined") {
+          return false;
+        }
+
+        if (typeof value === "string") {
+          return value.trim() !== "";
+        }
+
+        return true;
+      });
+    }
+
+    function analyzeRows(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) {
+        throw new Error("No rows were available to score.");
+      }
+
+      const headers = Array.from(
+        new Set(
+          rows.flatMap((row) => {
+            return Object.keys(row || {});
+          })
+        )
+      );
+
+      if (!headers.length) {
+        throw new Error("The spreadsheet is missing a usable header row.");
+      }
+
+      const identifierColumn = pickIdentifierColumn(headers, rows);
+      if (!identifierColumn) {
+        throw new Error(
+          "I could not detect a student or essay column. Add a header like Student Name, Name, or Essay ID."
+        );
+      }
+
+      const scoreConfig = pickScoreColumns(headers, rows, identifierColumn);
+      const rankedEntries = rankEntries(rows, identifierColumn, scoreConfig);
+
+      if (!rankedEntries.length) {
+        throw new Error(
+          "The spreadsheet loaded, but I could not calculate any scores from the detected columns."
+        );
+      }
+
+      return {
+        rowsAnalyzed: rows.length,
+        identifierColumn,
+        entityLabel: inferEntityLabel(identifierColumn),
+        scoreConfig,
+        rankedEntries
+      };
+    }
+
+    function pickIdentifierColumn(headers, rows) {
+      const explicitPriority = [
+        "student name",
+        "student",
+        "full name",
+        "name",
+        "essay id",
+        "essay",
+        "submission id",
+        "entry id"
+      ];
+
+      const normalizedHeaders = headers.map((header) => ({
+        header,
+        normalized: normalizeHeader(header)
+      }));
+
+      for (const target of explicitPriority) {
+        const exactMatch = normalizedHeaders.find((item) => item.normalized === target);
+        if (exactMatch) {
+          return exactMatch.header;
+        }
+      }
+
+      const keywordPriority = ["student", "name", "essay id", "essay", "submission", "entry"];
+      for (const keyword of keywordPriority) {
+        const partialMatch = normalizedHeaders.find((item) => keywordInHeader(item.header, keyword));
+        if (partialMatch) {
+          return partialMatch.header;
+        }
+      }
+
+      const fallback = normalizedHeaders
+        .map((item) => {
+          const populatedCount = rows.reduce((count, row) => {
+            return isBlank(row[item.header]) ? count : count + 1;
+          }, 0);
+
+          const numericCount = rows.reduce((count, row) => {
+            return parseNumericCell(row[item.header]) === null ? count : count + 1;
+          }, 0);
+
+          return {
+            header: item.header,
+            populatedCount,
+            numericRatio: populatedCount ? numericCount / populatedCount : 1
+          };
+        })
+        .filter((item) => item.populatedCount > 0)
+        .sort((left, right) => {
+          if (left.numericRatio !== right.numericRatio) {
+            return left.numericRatio - right.numericRatio;
+          }
+
+          return right.populatedCount - left.populatedCount;
+        });
+
+      return fallback.length ? fallback[0].header : "";
+    }
+
+    function pickScoreColumns(headers, rows, identifierColumn) {
+      const excludeKeywords = [
+        "timestamp",
+        "time",
+        "date",
+        "email",
+        "e-mail",
+        "teacher",
+        "comment",
+        "feedback",
+        "note",
+        "notes",
+        "period",
+        "section",
+        "class",
+        "grade level",
+        "phone",
+        "rank",
+        "ai",
+        "generated content"
+      ];
+
+      const rubricKeywords = [
+        "content",
+        "ideas",
+        "organization",
+        "flow",
+        "voice",
+        "style",
+        "evidence",
+        "support",
+        "convention",
+        "grammar",
+        "mechanics",
+        "rubric",
+        "criterion",
+        "clarity",
+        "analysis",
+        "structure"
+      ];
+
+      const totalKeywords = ["total", "overall", "final", "average", "avg"];
+
+      const candidates = headers
+        .filter((header) => header !== identifierColumn)
+        .filter((header) => {
+          if (excludeKeywords.some((keyword) => keywordInHeader(header, keyword))) {
+            return false;
+          }
+
+          const stats = getNumericStats(rows, header);
+          return stats.numericCount > 0 && stats.numericRatio >= 0.6;
+        });
+
+      if (!candidates.length) {
+        throw new Error(
+          "No score columns were detected. Make sure the spreadsheet has numeric score values."
+        );
+      }
+
+      const rubricColumns = candidates.filter((header) => {
+        const normalized = normalizeHeader(header);
+        return (
+          rubricKeywords.some((keyword) => normalized.includes(keyword)) ||
+          /^\d+[\s.)]/.test(normalized)
+        );
+      });
+
+      if (rubricColumns.length >= 2) {
+        return {
+          mode: "sum",
+          columns: rubricColumns,
+          averageLabel: "Average Total Score",
+          secondaryLabel: "Average Per Criterion"
+        };
+      }
+
+      const totalColumns = candidates.filter((header) => {
+        return totalKeywords.some((keyword) => keywordInHeader(header, keyword));
+      });
+
+      if (totalColumns.length) {
+        return {
+          mode: "single",
+          columns: [totalColumns[0]],
+          averageLabel: "Average Score",
+          secondaryLabel: "Detected Score Column"
+        };
+      }
+
+      if (candidates.length === 1) {
+        return {
+          mode: "single",
+          columns: [candidates[0]],
+          averageLabel: "Average Score",
+          secondaryLabel: "Detected Score Column"
+        };
+      }
+
+      return {
+        mode: "sum",
+        columns: candidates,
+        averageLabel: "Average Total Score",
+        secondaryLabel: "Average Per Column"
+      };
+    }
+
+    function getNumericStats(rows, header) {
+      let nonEmptyCount = 0;
+      let numericCount = 0;
+
+      rows.forEach((row) => {
+        const value = row[header];
+        if (isBlank(value)) {
+          return;
+        }
+
+        nonEmptyCount += 1;
+        if (parseNumericCell(value) !== null) {
+          numericCount += 1;
+        }
+      });
+
+      return {
+        nonEmptyCount,
+        numericCount,
+        numericRatio: nonEmptyCount ? numericCount / nonEmptyCount : 0
+      };
+    }
+
+    function rankEntries(rows, identifierColumn, scoreConfig) {
+      const grouped = new Map();
+
+      rows.forEach((row) => {
+        const identifier = stringifyCell(row[identifierColumn]);
+        if (!identifier) {
+          return;
+        }
+
+        const score = calculateRowScore(row, scoreConfig);
+        if (score === null) {
+          return;
+        }
+
+        if (!grouped.has(identifier)) {
+          grouped.set(identifier, []);
+        }
+
+        grouped.get(identifier).push(score);
+      });
+
+      return Array.from(grouped.entries())
+        .map(([name, scores]) => {
+          const averageScore = scores.reduce((sum, value) => sum + value, 0) / scores.length;
+          const secondaryScore =
+            scoreConfig.mode === "sum"
+              ? averageScore / scoreConfig.columns.length
+              : averageScore;
+
+          return {
+            name,
+            averageScore,
+            secondaryScore,
+            reviewCount: scores.length
+          };
+        })
+        .sort((left, right) => {
+          if (right.averageScore !== left.averageScore) {
+            return right.averageScore - left.averageScore;
+          }
+
+          return left.name.localeCompare(right.name, undefined, { numeric: true });
+        })
+        .map((entry, index) => ({
+          rank: index + 1,
+          ...entry
+        }));
+    }
+
+    function calculateRowScore(row, scoreConfig) {
+      if (scoreConfig.mode === "single") {
+        return parseNumericCell(row[scoreConfig.columns[0]]);
+      }
+
+      let total = 0;
+      let foundNumeric = false;
+
+      scoreConfig.columns.forEach((column) => {
+        const numericValue = parseNumericCell(row[column]);
+        if (numericValue !== null) {
+          total += numericValue;
+          foundNumeric = true;
+        }
+      });
+
+      return foundNumeric ? total : null;
+    }
+
+    function parseNumericCell(value) {
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+      }
+
+      if (typeof value !== "string") {
+        return null;
+      }
+
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const normalized = trimmed.replace(/,/g, "");
+      if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+        return null;
+      }
+
+      const numericValue = Number(normalized);
+      return Number.isFinite(numericValue) ? numericValue : null;
+    }
+
+    function normalizeHeader(value) {
+      return String(value || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    function keywordInHeader(header, keyword) {
+      const normalizedHeader = normalizeHeader(header).replace(/[^a-z0-9]+/g, " ").trim();
+      const normalizedKeyword = normalizeHeader(keyword).replace(/[^a-z0-9]+/g, " ").trim();
+
+      if (!normalizedHeader || !normalizedKeyword) {
+        return false;
+      }
+
+      return (
+        normalizedHeader === normalizedKeyword ||
+        normalizedHeader.startsWith(`${normalizedKeyword} `) ||
+        normalizedHeader.endsWith(` ${normalizedKeyword}`) ||
+        normalizedHeader.includes(` ${normalizedKeyword} `)
+      );
+    }
+
+    function inferEntityLabel(header) {
+      const normalized = normalizeHeader(header);
+      if (normalized.includes("student") || normalized === "name" || normalized.includes("name")) {
+        return "Student";
+      }
+
+      if (normalized.includes("essay")) {
+        return "Essay";
+      }
+
+      return "Entry";
+    }
+
+    function renderResults(analysis, sourceInfo) {
+      dom.emptyPanel.hidden = true;
+      dom.resultsPanel.hidden = false;
+
+      const topThree = analysis.rankedEntries.slice(0, 3);
+      dom.datasetMeta.textContent = `${sourceInfo.sourceName} | ${sourceInfo.sourceDetail}`;
+      dom.resultsSummary.textContent =
+        `Detected ${analysis.identifierColumn} and ranked ${analysis.rankedEntries.length} ` +
+        `${analysis.entityLabel.toLowerCase()}${analysis.rankedEntries.length === 1 ? "" : "s"} ` +
+        `using ${analysis.scoreConfig.columns.length} score column` +
+        `${analysis.scoreConfig.columns.length === 1 ? "" : "s"}.`;
+
+      dom.entityColumnHeading.textContent = analysis.entityLabel;
+      dom.secondaryScoreHeading.textContent = analysis.scoreConfig.secondaryLabel;
+
+      dom.topThree.innerHTML = topThree
+        .map((entry) => {
+          return `
+            <article class="rank-card">
+              <div class="rank-number">#${entry.rank}</div>
+              <h3>${escapeHtml(entry.name)}</h3>
+              <p>${analysis.entityLabel} ranked ${entry.rank} out of ${analysis.rankedEntries.length}</p>
+              <div class="rank-stats">
+                <div class="rank-stat">
+                  <span class="rank-stat-label">${analysis.scoreConfig.averageLabel}</span>
+                  <span class="rank-stat-value">${formatScore(entry.averageScore)}</span>
+                </div>
+                <div class="rank-stat">
+                  <span class="rank-stat-label">${analysis.scoreConfig.secondaryLabel}</span>
+                  <span class="rank-stat-value">${formatScore(entry.secondaryScore)}</span>
+                </div>
+                <div class="rank-stat">
+                  <span class="rank-stat-label">Reviews counted</span>
+                  <span class="rank-stat-value">${entry.reviewCount}</span>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      const firstPlace = analysis.rankedEntries[0];
+      const reviewedRows = analysis.rankedEntries.reduce((count, entry) => count + entry.reviewCount, 0);
+
+      dom.insightGrid.innerHTML = `
+        <div class="insight-card">
+          <strong>${analysis.rankedEntries.length}</strong>
+          <span>${analysis.entityLabel}${analysis.rankedEntries.length === 1 ? "" : "s"} ranked from ${analysis.rowsAnalyzed} row${analysis.rowsAnalyzed === 1 ? "" : "s"} of data.</span>
+        </div>
+        <div class="insight-card">
+          <strong>${reviewedRows}</strong>
+          <span>Score row${reviewedRows === 1 ? "" : "s"} were counted after grouping by ${analysis.identifierColumn}.</span>
+        </div>
+        <div class="insight-card">
+          <strong>${escapeHtml(firstPlace.name)}</strong>
+          <span>Current first place with an average score of ${formatScore(firstPlace.averageScore)}.</span>
+        </div>
+      `;
+
+      renderBarChart(analysis, topThree);
+
+      dom.resultsBody.innerHTML = analysis.rankedEntries
+        .map((entry) => {
+          return `
+            <tr>
+              <td>${entry.rank}</td>
+              <td>${escapeHtml(entry.name)}</td>
+              <td>${formatScore(entry.averageScore)}</td>
+              <td>${formatScore(entry.secondaryScore)}</td>
+              <td>${entry.reviewCount}</td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    function renderBarChart(analysis, entries) {
+      const chartEntries = entries.slice(0, 3);
+      const chartMetricLabel =
+        analysis.scoreConfig.mode === "sum"
+          ? analysis.scoreConfig.secondaryLabel
+          : analysis.scoreConfig.averageLabel;
+      const chartValues = chartEntries.map((entry) => {
+        return analysis.scoreConfig.mode === "sum" ? entry.secondaryScore : entry.averageScore;
+      });
+      const maxScore = Math.max(...chartValues, 1);
+
+      dom.chartSummary.textContent =
+        `This graph compares the top ${chartEntries.length} ${analysis.entityLabel.toLowerCase()}` +
+        `${chartEntries.length === 1 ? "" : "s"} by ${chartMetricLabel.toLowerCase()}.`;
+      dom.chartNote.textContent = `Highest average shown: ${formatScore(maxScore)}`;
+      dom.barChart.setAttribute(
+        "aria-label",
+        `Bar graph of the top ${chartEntries.length} ${analysis.entityLabel.toLowerCase()}` +
+          `${chartEntries.length === 1 ? "" : "s"} by ${chartMetricLabel.toLowerCase()}`
+      );
+
+      dom.barChart.innerHTML = chartEntries
+        .map((entry, index) => {
+          const chartValue = chartValues[index];
+          const barHeight = Math.max((chartValue / maxScore) * 100, 12);
+
+          return `
+            <article class="chart-column">
+              <div class="chart-value">${formatScore(chartValue)}</div>
+              <div class="chart-bar-wrap">
+                <div
+                  class="chart-bar"
+                  style="height: ${barHeight}%;"
+                  title="${escapeHtml(entry.name)}: ${formatScore(chartValue)} ${escapeHtml(chartMetricLabel)}"
+                ></div>
+              </div>
+              <div class="chart-label">
+                <strong>${escapeHtml(entry.name)}</strong>
+                <span>#${entry.rank} with ${entry.reviewCount} review${entry.reviewCount === 1 ? "" : "s"}</span>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    function clearResults() {
+      dom.fileInput.value = "";
+      dom.sheetsUrl.value = "";
+      dom.resultsPanel.hidden = true;
+      dom.emptyPanel.hidden = false;
+      dom.topThree.innerHTML = "";
+      dom.insightGrid.innerHTML = "";
+      dom.barChart.innerHTML = "";
+      dom.chartSummary.textContent = "Average criterion scores will be visualized here after data is loaded.";
+      dom.chartNote.textContent = "Scaled to the highest current average";
+      dom.resultsBody.innerHTML = "";
+      dom.datasetMeta.textContent = "";
+      dom.resultsSummary.textContent = "";
+      setStatus("Waiting for a spreadsheet or Google Sheets link.", "info");
+    }
+
+    function setBusy(isBusy) {
+      STATE.busy = isBusy;
+      [dom.browseButton, dom.loadUrlButton, dom.clearButton].forEach((button) => {
+        button.disabled = isBusy;
+      });
+    }
+
+    function setStatus(message, type) {
+      dom.statusBanner.className = `status-banner ${type}`;
+      dom.statusBanner.textContent = message;
+    }
+
+    function showError(error) {
+      const message = error instanceof Error ? error.message : "Something went wrong.";
+      setStatus(message, "error");
+    }
+
+    function stringifyCell(value) {
+      if (value === null || typeof value === "undefined") {
+        return "";
+      }
+
+      return String(value).trim();
+    }
+
+    function isBlank(value) {
+      return stringifyCell(value) === "";
+    }
+
+    function formatScore(value) {
+      return Number(value).toFixed(2);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    globalThis.__essayCompetition = {
+      analyzeRows,
+      parseGoogleSheetUrl,
+      pickIdentifierColumn,
+      pickScoreColumns,
+      parseNumericCell
+    };
+
+    if (typeof document !== "undefined") {
+      init();
+    }
+  </script>
+</body>
+</html>
