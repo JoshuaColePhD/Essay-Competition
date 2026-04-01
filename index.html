@@ -50,7 +50,7 @@
       width: min(1140px, 100%);
       margin: 0 auto;
       display: grid;
-      gap: 24px;
+      gap: 18px;
     }
 
     .hero,
@@ -62,10 +62,12 @@
     }
 
     .hero {
-      border-radius: 34px;
+      border-radius: 24px;
       overflow: hidden;
       position: relative;
-      padding: 22px 28px;
+      padding: 16px 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 252, 247, 0.96), rgba(245, 238, 226, 0.94));
     }
 
     .hero-top {
@@ -73,14 +75,14 @@
       z-index: 1;
       display: flex;
       justify-content: space-between;
-      align-items: start;
-      gap: 18px;
-      margin-bottom: 14px;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
     }
 
     .hero-title {
       display: grid;
-      gap: 8px;
+      gap: 4px;
     }
 
     .hero::before,
@@ -93,26 +95,26 @@
     }
 
     .hero::before {
-      width: 150px;
-      height: 150px;
-      right: -28px;
-      top: -48px;
+      width: 104px;
+      height: 104px;
+      right: -20px;
+      top: -34px;
       background: radial-gradient(circle, rgba(178, 89, 53, 0.18), transparent 68%);
     }
 
     .hero::after {
-      width: 180px;
-      height: 180px;
-      left: -50px;
-      bottom: -90px;
+      width: 132px;
+      height: 132px;
+      left: -36px;
+      bottom: -62px;
       background: radial-gradient(circle, rgba(39, 73, 105, 0.16), transparent 70%);
     }
 
     .eyebrow {
-      margin: 0 0 10px;
-      font-size: 0.78rem;
+      margin: 0;
+      font-size: 0.7rem;
       font-weight: 700;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--accent);
     }
@@ -127,50 +129,53 @@
     }
 
     h1 {
-      font-size: clamp(1.85rem, 3.6vw, 2.9rem);
-      max-width: 12ch;
+      font-size: clamp(1.2rem, 2vw, 1.65rem);
+      max-width: none;
+      line-height: 1.1;
     }
 
     .hero-copy {
       position: relative;
       z-index: 1;
       display: grid;
-      gap: 14px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px 18px;
+      align-items: center;
       max-width: 100%;
     }
 
     .hero-copy p {
       margin: 0;
-      max-width: 58ch;
+      max-width: 68ch;
       color: var(--muted);
-      font-size: 0.96rem;
-      line-height: 1.6;
+      font-size: 0.9rem;
+      line-height: 1.5;
     }
 
     .hero-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 2px;
+      gap: 8px;
+      justify-content: flex-end;
     }
 
     .header-tabs {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px;
+      gap: 6px;
+      padding: 4px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.68);
+      background: rgba(255, 255, 255, 0.78);
       border: 1px solid rgba(30, 43, 57, 0.08);
       flex-shrink: 0;
     }
 
     .header-tab {
-      padding: 10px 16px;
+      padding: 9px 14px;
       border-radius: 999px;
       background: transparent;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 700;
     }
 
@@ -185,12 +190,12 @@
     }
 
     .hero-badge {
-      padding: 8px 12px;
+      padding: 7px 10px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.7);
       border: 1px solid rgba(30, 43, 57, 0.08);
       color: var(--ink);
-      font-size: 0.84rem;
+      font-size: 0.76rem;
       font-weight: 600;
     }
 
@@ -791,6 +796,10 @@
         flex-direction: column;
       }
 
+      .hero-copy {
+        grid-template-columns: 1fr;
+      }
+
       .header-tabs {
         width: 100%;
         justify-content: stretch;
@@ -844,6 +853,10 @@
         align-items: stretch;
       }
 
+      .hero-badges {
+        justify-content: flex-start;
+      }
+
       .histogram-card-header {
         flex-direction: column;
       }
@@ -869,7 +882,7 @@
       <div class="hero-top">
         <div class="hero-title">
           <p class="eyebrow">Essay Competition Tool</p>
-          <h1>Find the top three scores in seconds.</h1>
+          <h1>Essay Score Leaderboard</h1>
         </div>
         <div class="header-tabs" role="tablist" aria-label="Page views">
           <button
@@ -898,14 +911,13 @@
       </div>
       <div class="hero-copy">
         <p>
-          Drop in a spreadsheet or paste a public Google Sheets link and this page will
-          calculate the highest-ranked essays or students automatically. It mirrors your
-          current workflow by averaging scores across each entry, then ranking the results.
+          Upload a spreadsheet or paste a Google Sheets URL to rank entries instantly, compare the
+          top performers, and open the histogram view for each scoring criterion.
         </p>
         <div class="hero-badges">
           <span class="hero-badge">Drag and drop CSV, XLSX, or XLS</span>
-          <span class="hero-badge">Paste a Google Sheets URL</span>
-          <span class="hero-badge">Auto-detect score columns</span>
+          <span class="hero-badge">Google Sheets support</span>
+          <span class="hero-badge">Leaderboard and histogram views</span>
         </div>
       </div>
     </section>
