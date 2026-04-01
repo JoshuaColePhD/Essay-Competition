@@ -549,6 +549,38 @@
       background: rgba(255, 255, 255, 0.9);
     }
 
+    .histogram-nav-controls {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .histogram-nav-button {
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid rgba(58, 86, 120, 0.12);
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      font-size: 1.1rem;
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    }
+
+    .histogram-nav-button:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .histogram-nav-button:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
     .chart-panel:fullscreen,
     .histogram-card:fullscreen {
       width: 100%;
@@ -562,11 +594,54 @@
     }
 
     .chart-panel:fullscreen .bar-chart {
-      min-height: min(72vh, 760px);
+      min-height: min(82vh, 920px);
+      padding-top: 34px;
+      padding-bottom: 28px;
+    }
+
+    .chart-panel:fullscreen .chart-column {
+      gap: 18px;
+    }
+
+    .chart-panel:fullscreen .chart-bar-wrap {
+      width: min(156px, 100%);
+      height: min(60vh, 640px);
+    }
+
+    .chart-panel:fullscreen .chart-value {
+      font-size: 1.4rem;
+    }
+
+    .chart-panel:fullscreen .chart-label strong {
+      font-size: 1.2rem;
+    }
+
+    .chart-panel:fullscreen .chart-label span {
+      font-size: 1rem;
     }
 
     .histogram-card:fullscreen .histogram-chart {
-      min-height: min(72vh, 760px);
+      min-height: min(82vh, 920px);
+      padding-top: 28px;
+      padding-bottom: 22px;
+    }
+
+    .histogram-card:fullscreen .histogram-nav-controls {
+      display: inline-flex;
+    }
+
+    .histogram-card:fullscreen .histogram-bar-group {
+      gap: 14px;
+    }
+
+    .histogram-card:fullscreen .histogram-bar-wrap {
+      width: min(112px, 100%);
+      height: min(52vh, 520px);
+    }
+
+    .histogram-card:fullscreen .histogram-count,
+    .histogram-card:fullscreen .histogram-label {
+      font-size: 0.96rem;
     }
 
     .bar-chart {
@@ -1217,7 +1292,7 @@
       });
 
       dom.comparisonChartExpandButton.addEventListener("click", handleFullscreenButtonClick);
-      dom.histogramGrid.addEventListener("click", handleFullscreenButtonClick);
+      dom.histogramGrid.addEventListener("click", handleHistogramGridClick);
       document.addEventListener("fullscreenchange", syncFullscreenButtons);
 
       dom.browseButton.addEventListener("click", () => dom.fileInput.click());
@@ -2013,6 +2088,46 @@
       void requestFullscreen(target);
     }
 
+    function handleHistogramGridClick(event) {
+      const navButton = event.target.closest(".histogram-nav-button");
+      if (navButton) {
+        void handleHistogramNavigation(navButton);
+        return;
+      }
+
+      handleFullscreenButtonClick(event);
+    }
+
+    async function handleHistogramNavigation(button) {
+      if (button.disabled) {
+        return;
+      }
+
+      const currentCard = button.closest(".histogram-card");
+      if (!currentCard) {
+        return;
+      }
+
+      const cards = Array.from(dom.histogramGrid.querySelectorAll(".histogram-card"));
+      const currentIndex = cards.indexOf(currentCard);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      const direction = Number(button.dataset.direction || 0);
+      const targetCard = cards[currentIndex + direction];
+      if (!targetCard) {
+        return;
+      }
+
+      if (document.fullscreenElement === currentCard) {
+        await requestFullscreen(targetCard);
+        return;
+      }
+
+      targetCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
+
     async function requestFullscreen(element) {
       if (element && typeof element.requestFullscreen === "function") {
         await element.requestFullscreen();
@@ -2030,6 +2145,9 @@
       const allButtons = typeof document.querySelectorAll === "function"
         ? Array.from(document.querySelectorAll(".expand-button"))
         : [];
+      const histogramCards = dom.histogramGrid
+        ? Array.from(dom.histogramGrid.querySelectorAll(".histogram-card"))
+        : [];
 
       allButtons.forEach((button) => {
         const targetId = button.dataset.fullscreenTarget;
@@ -2042,6 +2160,52 @@
         button.setAttribute("aria-label", isExpanded ? "Close fullscreen chart" : "Expand chart");
         button.setAttribute("aria-pressed", String(isExpanded));
       });
+
+      histogramCards.forEach((card, index) => {
+        const prevButton = card.querySelector('[data-direction="-1"]');
+        const nextButton = card.querySelector('[data-direction="1"]');
+        const isActiveCard = card === activeElement;
+        const hasPrev = index > 0;
+        const hasNext = index < histogramCards.length - 1;
+
+        if (prevButton) {
+          prevButton.disabled = !hasPrev;
+          prevButton.setAttribute(
+            "aria-label",
+            hasPrev
+              ? `Show previous criterion${isActiveCard ? " in fullscreen" : ""}`
+              : "No previous criterion"
+          );
+        }
+
+        if (nextButton) {
+          nextButton.disabled = !hasNext;
+          nextButton.setAttribute(
+            "aria-label",
+            hasNext
+              ? `Show next criterion${isActiveCard ? " in fullscreen" : ""}`
+              : "No next criterion"
+          );
+        }
+      });
+    }
+
+    function calculateBoostedBarHeight(value, maxValue, minValue = maxValue) {
+      if (!Number.isFinite(value) || value <= 0) {
+        return 0;
+      }
+
+      const safeMax = Math.max(maxValue, 1);
+      const safeMin = Math.max(Math.min(minValue, safeMax), 0);
+      const valueRange = safeMax - safeMin;
+      const absoluteHeight = (value / safeMax) * 100;
+
+      if (valueRange <= 0) {
+        return absoluteHeight;
+      }
+
+      const rangeHeight = 42 + ((value - safeMin) / valueRange) * 58;
+      return absoluteHeight * 0.7 + rangeHeight * 0.3;
     }
 
     function renderResults(analysis, sourceInfo) {
@@ -2136,11 +2300,15 @@
           : `${histogramItems.length} criteria detected`;
 
       dom.histogramGrid.innerHTML = histogramItems
-        .map((item) => {
+        .map((item, index) => {
           const maxCount = Math.max(...item.buckets.map((bucket) => bucket.count), 1);
+          const nonZeroCounts = item.buckets
+            .map((bucket) => bucket.count)
+            .filter((count) => count > 0);
+          const minNonZeroCount = nonZeroCounts.length ? Math.min(...nonZeroCounts) : maxCount;
 
           return `
-            <article class="histogram-card">
+            <article class="histogram-card" data-histogram-index="${index}">
               <div class="histogram-card-header">
                 <div>
                   <h3>${escapeHtml(item.label)}</h3>
@@ -2150,6 +2318,24 @@
                   <div class="histogram-meta">
                     <div class="histogram-pill">Avg ${formatScore(item.average)}</div>
                     <div class="histogram-pill">${item.count} scores</div>
+                  </div>
+                  <div class="histogram-nav-controls" role="group" aria-label="Criterion navigation">
+                    <button
+                      class="histogram-nav-button"
+                      type="button"
+                      aria-label="Show previous criterion"
+                      data-direction="-1"
+                    >
+                      &larr;
+                    </button>
+                    <button
+                      class="histogram-nav-button"
+                      type="button"
+                      aria-label="Show next criterion"
+                      data-direction="1"
+                    >
+                      &rarr;
+                    </button>
                   </div>
                   <button
                     class="expand-button"
@@ -2167,7 +2353,12 @@
               >
                 ${item.buckets
                   .map((bucket) => {
-                    const barHeight = Math.max((bucket.count / maxCount) * 100, bucket.count ? 12 : 0);
+                    const barHeight = bucket.count > 0
+                      ? Math.max(
+                          calculateBoostedBarHeight(bucket.count, maxCount, minNonZeroCount),
+                          12
+                        )
+                      : 0;
 
                     return `
                       <div class="histogram-bar-group">
@@ -2211,7 +2402,7 @@
         `${chartEntries.length === 1 ? "" : "s"} by ${chartMetricLabel.toLowerCase()}.`;
       dom.chartNote.textContent =
         scoreRange > 0
-          ? `Range scaled: ${formatScore(minScore)} to ${formatScore(maxScore)}`
+          ? `Gentle contrast boost: ${formatScore(minScore)} to ${formatScore(maxScore)}`
           : `Highest average shown: ${formatScore(maxScore)}`;
       dom.barChart.setAttribute(
         "aria-label",
@@ -2222,11 +2413,7 @@
       dom.barChart.innerHTML = chartEntries
         .map((entry, index) => {
           const chartValue = chartValues[index];
-          const normalizedHeight =
-            scoreRange > 0 ? (chartValue - minScore) / scoreRange : 0.72;
-          const barHeight = scoreRange > 0
-            ? 18 + normalizedHeight * 82
-            : 72;
+          const barHeight = calculateBoostedBarHeight(chartValue, maxScore, minScore);
 
           return `
             <article class="chart-column">
@@ -2286,7 +2473,7 @@
       dom.insightGrid.innerHTML = "";
       dom.barChart.innerHTML = "";
       dom.chartSummary.textContent = "Average criterion scores will be visualized here after data is loaded.";
-      dom.chartNote.textContent = "Range scaled for easier comparison";
+      dom.chartNote.textContent = "Includes a gentle contrast boost";
       dom.resultsBody.innerHTML = "";
       dom.datasetMeta.textContent = "";
       dom.resultsSummary.textContent = "";
