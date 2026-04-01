@@ -13,21 +13,39 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
-      --bg: #f3efe5;
-      --panel: rgba(255, 252, 247, 0.88);
-      --panel-strong: rgba(255, 250, 242, 0.96);
-      --ink: #1e2b39;
-      --muted: #5f6c7b;
-      --accent: #b25935;
-      --accent-soft: rgba(178, 89, 53, 0.14);
-      --accent-strong: #8f4323;
-      --line: rgba(30, 43, 57, 0.12);
+      --bg: #eef5ff;
+      --panel: rgba(246, 250, 255, 0.72);
+      --panel-strong: rgba(252, 254, 255, 0.82);
+      --ink: #1d3148;
+      --muted: #64778f;
+      --accent: #4c7cf0;
+      --accent-soft: rgba(76, 124, 240, 0.14);
+      --accent-strong: #2f5ec9;
+      --line: rgba(58, 86, 120, 0.12);
       --success: #246b49;
       --error: #962f2f;
-      --shadow: 0 24px 70px rgba(31, 37, 44, 0.12);
+      --shadow: 0 28px 72px rgba(43, 72, 106, 0.14);
       --radius-lg: 28px;
       --radius-md: 18px;
       --radius-sm: 12px;
+      --series-1-start: #8ab3ff;
+      --series-1-mid: #5a84f4;
+      --series-1-end: #315fcf;
+      --series-2-start: #88e0d0;
+      --series-2-mid: #49c1b0;
+      --series-2-end: #219489;
+      --series-3-start: #f7c193;
+      --series-3-mid: #ef9a63;
+      --series-3-end: #d97540;
+      --series-4-start: #a4b7ff;
+      --series-4-mid: #7a94ff;
+      --series-4-end: #4a6fe0;
+      --series-5-start: #9be6cf;
+      --series-5-mid: #69ceb3;
+      --series-5-end: #37a18f;
+      --series-6-start: #ffd4a7;
+      --series-6-mid: #f5af6f;
+      --series-6-end: #df8445;
     }
 
     * {
@@ -40,9 +58,10 @@
       font-family: "Manrope", "Segoe UI", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(178, 89, 53, 0.16), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(47, 87, 120, 0.14), transparent 28%),
-        linear-gradient(135deg, #f7f1e7 0%, #efe7d8 42%, #f6f2ea 100%);
+        radial-gradient(circle at top left, rgba(76, 124, 240, 0.2), transparent 34%),
+        radial-gradient(circle at 84% 18%, rgba(73, 193, 176, 0.16), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(239, 154, 99, 0.18), transparent 30%),
+        linear-gradient(135deg, #f8fbff 0%, #eef5ff 42%, #f7f4ef 100%);
       padding: 32px 18px 48px;
     }
 
@@ -55,9 +74,9 @@
 
     .hero,
     .panel {
-      backdrop-filter: blur(14px);
+      backdrop-filter: blur(18px);
       background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.78);
       box-shadow: var(--shadow);
     }
 
@@ -67,7 +86,7 @@
       position: relative;
       padding: 16px 18px;
       background:
-        linear-gradient(135deg, rgba(255, 252, 247, 0.96), rgba(245, 238, 226, 0.94));
+        linear-gradient(135deg, rgba(249, 252, 255, 0.92), rgba(241, 248, 255, 0.88));
     }
 
     .hero-top {
@@ -99,7 +118,7 @@
       height: 104px;
       right: -20px;
       top: -34px;
-      background: radial-gradient(circle, rgba(178, 89, 53, 0.18), transparent 68%);
+      background: radial-gradient(circle, rgba(76, 124, 240, 0.22), transparent 68%);
     }
 
     .hero::after {
@@ -107,7 +126,7 @@
       height: 132px;
       left: -36px;
       bottom: -62px;
-      background: radial-gradient(circle, rgba(39, 73, 105, 0.16), transparent 70%);
+      background: radial-gradient(circle, rgba(73, 193, 176, 0.18), transparent 70%);
     }
 
     .eyebrow {
@@ -134,39 +153,15 @@
       line-height: 1.1;
     }
 
-    .hero-copy {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px 18px;
-      align-items: center;
-      max-width: 100%;
-    }
-
-    .hero-copy p {
-      margin: 0;
-      max-width: 68ch;
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.5;
-    }
-
-    .hero-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
-    }
-
     .header-tabs {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 4px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid rgba(30, 43, 57, 0.08);
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(58, 86, 120, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
       flex-shrink: 0;
     }
 
@@ -182,21 +177,11 @@
     .header-tab.is-active {
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #fff;
-      box-shadow: 0 12px 24px rgba(143, 67, 35, 0.18);
+      box-shadow: 0 12px 24px rgba(47, 94, 201, 0.22);
     }
 
     .header-tab[aria-selected="true"] {
       transform: none;
-    }
-
-    .hero-badge {
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid rgba(30, 43, 57, 0.08);
-      color: var(--ink);
-      font-size: 0.76rem;
-      font-weight: 600;
     }
 
     .panel {
@@ -219,6 +204,9 @@
       display: grid;
       gap: 16px;
       min-height: 270px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        0 18px 38px rgba(58, 86, 120, 0.08);
     }
 
     .control-card p {
@@ -232,13 +220,13 @@
       place-items: center;
       text-align: center;
       gap: 10px;
-      border: 2px dashed rgba(178, 89, 53, 0.34);
+      border: 2px dashed rgba(76, 124, 240, 0.28);
       border-radius: 20px;
       padding: 34px 18px;
       min-height: 170px;
       background:
-        linear-gradient(180deg, rgba(178, 89, 53, 0.06), rgba(178, 89, 53, 0)),
-        #fffdf8;
+        linear-gradient(180deg, rgba(76, 124, 240, 0.08), rgba(73, 193, 176, 0.04)),
+        rgba(255, 255, 255, 0.72);
       transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
       cursor: pointer;
     }
@@ -246,10 +234,10 @@
     .drop-zone:hover,
     .drop-zone.is-active {
       transform: translateY(-2px);
-      border-color: rgba(178, 89, 53, 0.7);
+      border-color: rgba(76, 124, 240, 0.62);
       background:
-        linear-gradient(180deg, rgba(178, 89, 53, 0.12), rgba(178, 89, 53, 0.02)),
-        #fffdf8;
+        linear-gradient(180deg, rgba(76, 124, 240, 0.14), rgba(73, 193, 176, 0.06)),
+        rgba(255, 255, 255, 0.78);
     }
 
     .drop-zone strong {
@@ -299,11 +287,12 @@
     .primary-button {
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #fff;
-      box-shadow: 0 14px 28px rgba(143, 67, 35, 0.24);
+      box-shadow: 0 14px 28px rgba(47, 94, 201, 0.24);
     }
 
     .secondary-button {
-      background: rgba(30, 43, 57, 0.06);
+      background: rgba(255, 255, 255, 0.54);
+      border: 1px solid rgba(58, 86, 120, 0.08);
       color: var(--ink);
     }
 
@@ -318,13 +307,13 @@
       padding: 15px 16px;
       border-radius: 14px;
       border: 1px solid var(--line);
-      background: #fffdf9;
+      background: rgba(255, 255, 255, 0.72);
       color: var(--ink);
       outline: none;
     }
 
     .url-input:focus {
-      border-color: rgba(178, 89, 53, 0.62);
+      border-color: rgba(76, 124, 240, 0.58);
       box-shadow: 0 0 0 4px var(--accent-soft);
     }
 
@@ -332,7 +321,7 @@
       margin-top: 20px;
       padding: 14px 16px;
       border-radius: 16px;
-      background: rgba(30, 43, 57, 0.05);
+      background: rgba(255, 255, 255, 0.48);
       color: var(--ink);
       min-height: 52px;
       display: flex;
@@ -341,8 +330,8 @@
     }
 
     .status-banner.info {
-      background: rgba(30, 43, 57, 0.05);
-      border-color: rgba(30, 43, 57, 0.06);
+      background: rgba(255, 255, 255, 0.48);
+      border-color: rgba(58, 86, 120, 0.08);
     }
 
     .status-banner.success {
@@ -378,8 +367,8 @@
     }
 
     .meta-pill {
-      background: rgba(30, 43, 57, 0.06);
-      border: 1px solid rgba(30, 43, 57, 0.08);
+      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid rgba(58, 86, 120, 0.08);
       border-radius: 999px;
       padding: 10px 14px;
       font-size: 0.9rem;
@@ -400,9 +389,11 @@
       padding: 22px;
       border-radius: 22px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 239, 228, 0.94));
-      border: 1px solid rgba(30, 43, 57, 0.09);
-      box-shadow: 0 18px 34px rgba(30, 43, 57, 0.08);
+        linear-gradient(180deg, rgba(251, 253, 255, 0.84), rgba(242, 248, 255, 0.78));
+      border: 1px solid rgba(58, 86, 120, 0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 18px 34px rgba(58, 86, 120, 0.1);
       animation: rise-in 420ms ease both;
     }
 
@@ -414,7 +405,7 @@
       width: 150px;
       height: 150px;
       border-radius: 999px;
-      background: radial-gradient(circle, rgba(178, 89, 53, 0.12), transparent 72%);
+      background: radial-gradient(circle, rgba(76, 124, 240, 0.16), transparent 72%);
       pointer-events: none;
     }
 
@@ -426,7 +417,7 @@
       height: 48px;
       border-radius: 14px;
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-strong);
       font-weight: 800;
       font-size: 1.15rem;
       margin-bottom: 18px;
@@ -480,8 +471,9 @@
     .insight-card {
       padding: 18px;
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(30, 43, 57, 0.08);
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(58, 86, 120, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
 
     .insight-card strong {
@@ -500,8 +492,8 @@
       padding: 22px;
       border-radius: 22px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 238, 226, 0.94));
-      border: 1px solid rgba(30, 43, 57, 0.09);
+        linear-gradient(180deg, rgba(250, 253, 255, 0.82), rgba(241, 248, 255, 0.78));
+      border: 1px solid rgba(58, 86, 120, 0.08);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
     }
 
@@ -522,7 +514,7 @@
     .chart-note {
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(30, 43, 57, 0.06);
+      background: rgba(255, 255, 255, 0.56);
       color: var(--muted);
       font-size: 0.9rem;
       font-weight: 600;
@@ -538,7 +530,7 @@
       padding: 26px 18px 18px;
       border-radius: 20px;
       background:
-        linear-gradient(180deg, rgba(178, 89, 53, 0.06), rgba(255, 255, 255, 0.76)),
+        linear-gradient(180deg, rgba(76, 124, 240, 0.08), rgba(255, 255, 255, 0.76)),
         repeating-linear-gradient(
           to top,
           rgba(30, 43, 57, 0.05) 0,
@@ -546,7 +538,7 @@
           transparent 1px,
           transparent 56px
         );
-      border: 1px solid rgba(30, 43, 57, 0.08);
+      border: 1px solid rgba(58, 86, 120, 0.08);
     }
 
     .chart-column {
@@ -575,12 +567,41 @@
       width: 100%;
       min-height: 22px;
       border-radius: 20px 20px 10px 10px;
-      background: linear-gradient(180deg, #d07c55 0%, #b25935 48%, #8f4323 100%);
+      background: linear-gradient(
+        180deg,
+        var(--bar-start, var(--series-1-start)) 0%,
+        var(--bar-mid, var(--series-1-mid)) 48%,
+        var(--bar-end, var(--series-1-end)) 100%
+      );
       box-shadow:
-        0 18px 26px rgba(143, 67, 35, 0.2),
+        0 18px 26px rgba(67, 103, 170, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.32);
       position: relative;
       overflow: hidden;
+    }
+
+    .chart-column:nth-child(3n + 1) .chart-bar,
+    .chart-column:nth-child(3n + 1) .chart-value {
+      --bar-start: var(--series-1-start);
+      --bar-mid: var(--series-1-mid);
+      --bar-end: var(--series-1-end);
+      color: var(--series-1-end);
+    }
+
+    .chart-column:nth-child(3n + 2) .chart-bar,
+    .chart-column:nth-child(3n + 2) .chart-value {
+      --bar-start: var(--series-2-start);
+      --bar-mid: var(--series-2-mid);
+      --bar-end: var(--series-2-end);
+      color: var(--series-2-end);
+    }
+
+    .chart-column:nth-child(3n + 3) .chart-bar,
+    .chart-column:nth-child(3n + 3) .chart-value {
+      --bar-start: var(--series-3-start);
+      --bar-mid: var(--series-3-mid);
+      --bar-end: var(--series-3-end);
+      color: var(--series-3-end);
     }
 
     .chart-bar::after {
@@ -622,9 +643,11 @@
       padding: 20px;
       border-radius: 22px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 239, 228, 0.94));
-      border: 1px solid rgba(30, 43, 57, 0.09);
-      box-shadow: 0 18px 34px rgba(30, 43, 57, 0.08);
+        linear-gradient(180deg, rgba(251, 253, 255, 0.84), rgba(241, 248, 255, 0.8));
+      border: 1px solid rgba(58, 86, 120, 0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 18px 34px rgba(58, 86, 120, 0.1);
       display: grid;
       gap: 18px;
     }
@@ -652,7 +675,7 @@
     .histogram-pill {
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(30, 43, 57, 0.06);
+      background: rgba(255, 255, 255, 0.56);
       color: var(--muted);
       text-align: center;
       font-size: 0.86rem;
@@ -667,7 +690,7 @@
       padding: 20px 16px 14px;
       border-radius: 18px;
       background:
-        linear-gradient(180deg, rgba(47, 87, 120, 0.06), rgba(255, 255, 255, 0.78)),
+        linear-gradient(180deg, rgba(76, 124, 240, 0.08), rgba(255, 255, 255, 0.78)),
         repeating-linear-gradient(
           to top,
           rgba(30, 43, 57, 0.05) 0,
@@ -675,7 +698,7 @@
           transparent 1px,
           transparent 44px
         );
-      border: 1px solid rgba(30, 43, 57, 0.08);
+      border: 1px solid rgba(58, 86, 120, 0.08);
     }
 
     .histogram-bar-group {
@@ -704,10 +727,51 @@
       width: 100%;
       min-height: 0;
       border-radius: 14px 14px 8px 8px;
-      background: linear-gradient(180deg, #4c85a9 0%, #2f5778 54%, #203f58 100%);
+      background: linear-gradient(
+        180deg,
+        var(--bar-start, var(--series-1-start)) 0%,
+        var(--bar-mid, var(--series-1-mid)) 54%,
+        var(--bar-end, var(--series-1-end)) 100%
+      );
       box-shadow:
-        0 14px 24px rgba(32, 63, 88, 0.18),
+        0 14px 24px rgba(67, 103, 170, 0.18),
         inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .histogram-bar-group:nth-child(6n + 1) .histogram-bar {
+      --bar-start: var(--series-1-start);
+      --bar-mid: var(--series-1-mid);
+      --bar-end: var(--series-1-end);
+    }
+
+    .histogram-bar-group:nth-child(6n + 2) .histogram-bar {
+      --bar-start: var(--series-2-start);
+      --bar-mid: var(--series-2-mid);
+      --bar-end: var(--series-2-end);
+    }
+
+    .histogram-bar-group:nth-child(6n + 3) .histogram-bar {
+      --bar-start: var(--series-3-start);
+      --bar-mid: var(--series-3-mid);
+      --bar-end: var(--series-3-end);
+    }
+
+    .histogram-bar-group:nth-child(6n + 4) .histogram-bar {
+      --bar-start: var(--series-4-start);
+      --bar-mid: var(--series-4-mid);
+      --bar-end: var(--series-4-end);
+    }
+
+    .histogram-bar-group:nth-child(6n + 5) .histogram-bar {
+      --bar-start: var(--series-5-start);
+      --bar-mid: var(--series-5-mid);
+      --bar-end: var(--series-5-end);
+    }
+
+    .histogram-bar-group:nth-child(6n) .histogram-bar {
+      --bar-start: var(--series-6-start);
+      --bar-mid: var(--series-6-mid);
+      --bar-end: var(--series-6-end);
     }
 
     .histogram-label {
@@ -721,8 +785,8 @@
     .table-wrap {
       overflow: hidden;
       border-radius: 22px;
-      border: 1px solid rgba(30, 43, 57, 0.09);
-      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(58, 86, 120, 0.08);
+      background: rgba(255, 255, 255, 0.62);
     }
 
     .table-scroll {
@@ -737,7 +801,7 @@
 
     thead th {
       text-align: left;
-      background: rgba(30, 43, 57, 0.06);
+      background: rgba(76, 124, 240, 0.08);
       font-size: 0.86rem;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -752,14 +816,14 @@
     }
 
     tbody tr:nth-child(odd) {
-      background: rgba(255, 255, 255, 0.46);
+      background: rgba(255, 255, 255, 0.36);
     }
 
     .empty-panel {
       text-align: center;
       padding: 44px 28px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(247, 241, 231, 0.9));
+        linear-gradient(180deg, rgba(250, 253, 255, 0.78), rgba(242, 248, 255, 0.74));
     }
 
     .empty-panel p {
@@ -794,10 +858,6 @@
       .hero-top {
         align-items: start;
         flex-direction: column;
-      }
-
-      .hero-copy {
-        grid-template-columns: 1fr;
       }
 
       .header-tabs {
@@ -847,14 +907,9 @@
         padding: 18px;
       }
 
-      .hero-badges,
       .button-row {
         flex-direction: column;
         align-items: stretch;
-      }
-
-      .hero-badges {
-        justify-content: flex-start;
       }
 
       .histogram-card-header {
@@ -882,7 +937,6 @@
       <div class="hero-top">
         <div class="hero-title">
           <p class="eyebrow">Essay Competition Tool</p>
-          <h1>Essay Score Leaderboard</h1>
         </div>
         <div class="header-tabs" role="tablist" aria-label="Page views">
           <button
@@ -907,17 +961,6 @@
           >
             Histograms
           </button>
-        </div>
-      </div>
-      <div class="hero-copy">
-        <p>
-          Upload a spreadsheet or paste a Google Sheets URL to rank entries instantly, compare the
-          top performers, and open the histogram view for each scoring criterion.
-        </p>
-        <div class="hero-badges">
-          <span class="hero-badge">Drag and drop CSV, XLSX, or XLS</span>
-          <span class="hero-badge">Google Sheets support</span>
-          <span class="hero-badge">Leaderboard and histogram views</span>
         </div>
       </div>
     </section>
