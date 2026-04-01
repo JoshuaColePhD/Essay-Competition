@@ -505,6 +505,15 @@
       margin-bottom: 18px;
     }
 
+    .chart-header-actions,
+    .histogram-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .chart-header p {
       margin: 8px 0 0;
       color: var(--muted);
@@ -519,6 +528,45 @@
       font-size: 0.9rem;
       font-weight: 600;
       white-space: nowrap;
+    }
+
+    .expand-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(58, 86, 120, 0.12);
+      background: rgba(255, 255, 255, 0.66);
+      color: var(--ink);
+      font-size: 0.84rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .expand-button:hover {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .chart-panel:fullscreen,
+    .histogram-card:fullscreen {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 28px;
+      border-radius: 0;
+      background:
+        linear-gradient(180deg, rgba(250, 253, 255, 0.96), rgba(241, 248, 255, 0.94));
+      overflow: auto;
+    }
+
+    .chart-panel:fullscreen .bar-chart {
+      min-height: min(72vh, 760px);
+    }
+
+    .histogram-card:fullscreen .histogram-chart {
+      min-height: min(72vh, 760px);
     }
 
     .bar-chart {
@@ -886,6 +934,12 @@
         flex-direction: column;
       }
 
+      .chart-header-actions,
+      .histogram-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
       .bar-chart {
         grid-template-columns: 1fr;
         min-height: auto;
@@ -1049,14 +1103,26 @@
 
         <div class="insight-grid" id="insightGrid"></div>
 
-        <section class="chart-panel" aria-labelledby="barGraphTitle">
+        <section class="chart-panel" id="comparisonChartPanel" aria-labelledby="barGraphTitle">
           <div class="chart-header">
             <div>
               <p class="eyebrow">Graph Panel</p>
               <h3 id="barGraphTitle">Bar graph of average scores</h3>
               <p id="chartSummary">Average criterion scores will be visualized here after data is loaded.</p>
             </div>
-            <div class="chart-note" id="chartNote">Scaled to the highest current average</div>
+            <div class="chart-header-actions">
+              <div class="chart-note" id="chartNote">Scaled to the highest current average</div>
+              <button
+                class="expand-button"
+                id="comparisonChartExpandButton"
+                type="button"
+                aria-label="Expand comparison chart"
+                aria-pressed="false"
+                data-fullscreen-target="comparisonChartPanel"
+              >
+                Expand
+              </button>
+            </div>
           </div>
           <div class="bar-chart" id="barChart" role="img" aria-label="Bar graph of top-ranked average scores"></div>
         </section>
@@ -1132,6 +1198,8 @@
       dom.resultsSummary = document.getElementById("resultsSummary");
       dom.topThree = document.getElementById("topThree");
       dom.insightGrid = document.getElementById("insightGrid");
+      dom.comparisonChartPanel = document.getElementById("comparisonChartPanel");
+      dom.comparisonChartExpandButton = document.getElementById("comparisonChartExpandButton");
       dom.barChart = document.getElementById("barChart");
       dom.chartSummary = document.getElementById("chartSummary");
       dom.chartNote = document.getElementById("chartNote");
@@ -1147,6 +1215,10 @@
       dom.tabButtons.forEach((button) => {
         button.addEventListener("click", () => switchTab(button.dataset.tab));
       });
+
+      dom.comparisonChartExpandButton.addEventListener("click", handleFullscreenButtonClick);
+      dom.histogramGrid.addEventListener("click", handleFullscreenButtonClick);
+      document.addEventListener("fullscreenchange", syncFullscreenButtons);
 
       dom.browseButton.addEventListener("click", () => dom.fileInput.click());
       dom.fileInput.addEventListener("change", handleFileSelection);
@@ -1913,6 +1985,65 @@
       return label.length > 54 ? `${label.slice(0, 51)}...` : label;
     }
 
+    function handleFullscreenButtonClick(event) {
+      const button = event.target.closest(".expand-button");
+      if (!button) {
+        return;
+      }
+
+      const targetId = button.dataset.fullscreenTarget;
+      const target = targetId
+        ? document.getElementById(targetId)
+        : button.closest(".histogram-card");
+
+      if (!target) {
+        return;
+      }
+
+      if (document.fullscreenElement === target) {
+        void exitFullscreen();
+        return;
+      }
+
+      if (document.fullscreenElement) {
+        void exitFullscreen().then(() => requestFullscreen(target));
+        return;
+      }
+
+      void requestFullscreen(target);
+    }
+
+    async function requestFullscreen(element) {
+      if (element && typeof element.requestFullscreen === "function") {
+        await element.requestFullscreen();
+      }
+    }
+
+    async function exitFullscreen() {
+      if (typeof document.exitFullscreen === "function") {
+        await document.exitFullscreen();
+      }
+    }
+
+    function syncFullscreenButtons() {
+      const activeElement = document.fullscreenElement;
+      const allButtons = typeof document.querySelectorAll === "function"
+        ? Array.from(document.querySelectorAll(".expand-button"))
+        : [];
+
+      allButtons.forEach((button) => {
+        const targetId = button.dataset.fullscreenTarget;
+        const target = targetId
+          ? document.getElementById(targetId)
+          : button.closest(".histogram-card");
+        const isExpanded = Boolean(target) && target === activeElement;
+
+        button.textContent = isExpanded ? "Close" : "Expand";
+        button.setAttribute("aria-label", isExpanded ? "Close fullscreen chart" : "Expand chart");
+        button.setAttribute("aria-pressed", String(isExpanded));
+      });
+    }
+
     function renderResults(analysis, sourceInfo) {
       STATE.currentAnalysis = analysis;
       dom.emptyPanel.hidden = true;
@@ -2015,9 +2146,19 @@
                   <h3>${escapeHtml(item.label)}</h3>
                   <p>Distribution of all raw review scores captured for this criterion.</p>
                 </div>
-                <div class="histogram-meta">
-                  <div class="histogram-pill">Avg ${formatScore(item.average)}</div>
-                  <div class="histogram-pill">${item.count} scores</div>
+                <div class="histogram-header-actions">
+                  <div class="histogram-meta">
+                    <div class="histogram-pill">Avg ${formatScore(item.average)}</div>
+                    <div class="histogram-pill">${item.count} scores</div>
+                  </div>
+                  <button
+                    class="expand-button"
+                    type="button"
+                    aria-label="Expand histogram"
+                    aria-pressed="false"
+                  >
+                    Expand
+                  </button>
                 </div>
               </div>
               <div
@@ -2048,6 +2189,8 @@
           `;
         })
         .join("");
+
+      syncFullscreenButtons();
     }
 
     function renderBarChart(analysis, entries) {
@@ -2060,11 +2203,16 @@
         return analysis.scoreConfig.mode === "sum" ? entry.secondaryScore : entry.averageScore;
       });
       const maxScore = Math.max(...chartValues, 1);
+      const minScore = Math.min(...chartValues, maxScore);
+      const scoreRange = maxScore - minScore;
 
       dom.chartSummary.textContent =
         `This graph compares the top ${chartEntries.length} ${analysis.entityLabel.toLowerCase()}` +
         `${chartEntries.length === 1 ? "" : "s"} by ${chartMetricLabel.toLowerCase()}.`;
-      dom.chartNote.textContent = `Highest average shown: ${formatScore(maxScore)}`;
+      dom.chartNote.textContent =
+        scoreRange > 0
+          ? `Range scaled: ${formatScore(minScore)} to ${formatScore(maxScore)}`
+          : `Highest average shown: ${formatScore(maxScore)}`;
       dom.barChart.setAttribute(
         "aria-label",
         `Bar graph of the top ${chartEntries.length} ${analysis.entityLabel.toLowerCase()}` +
@@ -2074,7 +2222,11 @@
       dom.barChart.innerHTML = chartEntries
         .map((entry, index) => {
           const chartValue = chartValues[index];
-          const barHeight = Math.max((chartValue / maxScore) * 100, 12);
+          const normalizedHeight =
+            scoreRange > 0 ? (chartValue - minScore) / scoreRange : 0.72;
+          const barHeight = scoreRange > 0
+            ? 18 + normalizedHeight * 82
+            : 72;
 
           return `
             <article class="chart-column">
@@ -2094,6 +2246,8 @@
           `;
         })
         .join("");
+
+      syncFullscreenButtons();
     }
 
     function switchTab(tabName) {
@@ -2132,13 +2286,14 @@
       dom.insightGrid.innerHTML = "";
       dom.barChart.innerHTML = "";
       dom.chartSummary.textContent = "Average criterion scores will be visualized here after data is loaded.";
-      dom.chartNote.textContent = "Scaled to the highest current average";
+      dom.chartNote.textContent = "Range scaled for easier comparison";
       dom.resultsBody.innerHTML = "";
       dom.datasetMeta.textContent = "";
       dom.resultsSummary.textContent = "";
       dom.histogramGrid.innerHTML = "";
       dom.histogramSummary.textContent = "";
       dom.histogramMeta.textContent = "";
+      syncFullscreenButtons();
       updateHistogramPanels();
       setStatus("Waiting for a spreadsheet or Google Sheets link.", "info");
     }
