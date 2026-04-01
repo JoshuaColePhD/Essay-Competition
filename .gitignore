@@ -1,6 +1,0 @@
-# Keep the public repo surface minimal.
-# Everything is ignored by default except the site entry point and README.
-/*
-!/.gitignore
-!/README.md
-!/index.html
