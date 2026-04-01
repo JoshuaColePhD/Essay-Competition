@@ -302,6 +302,98 @@
       margin-top: auto;
     }
 
+    .live-controls {
+      display: grid;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(58, 86, 120, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .live-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .live-toggle-copy {
+      display: grid;
+      gap: 3px;
+    }
+
+    .live-toggle-copy strong {
+      font-size: 0.95rem;
+    }
+
+    .live-toggle-copy span {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .toggle-switch {
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      appearance: none;
+      width: 52px;
+      height: 30px;
+      margin: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(58, 86, 120, 0.12);
+      background: rgba(58, 86, 120, 0.16);
+      position: relative;
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    }
+
+    .toggle-switch input::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 6px 12px rgba(29, 49, 72, 0.16);
+      transition: transform 180ms ease;
+    }
+
+    .toggle-switch input:checked {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: rgba(47, 94, 201, 0.28);
+    }
+
+    .toggle-switch input:checked::after {
+      transform: translateX(22px);
+    }
+
+    .toggle-switch input:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .live-refresh-meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .live-refresh-meta[data-tone="active"],
+    .live-refresh-meta[data-tone="success"] {
+      color: var(--accent-strong);
+    }
+
+    .live-refresh-meta[data-tone="error"] {
+      color: var(--error);
+    }
+
     .url-input {
       width: 100%;
       padding: 15px 16px;
@@ -1051,6 +1143,11 @@
         flex-direction: column;
       }
 
+      .live-toggle {
+        align-items: start;
+        flex-direction: column;
+      }
+
       .histogram-meta {
         width: 100%;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1148,7 +1245,22 @@
               />
               <div class="button-row">
                 <button class="primary-button" id="loadUrlButton" type="submit">Load sheet</button>
-                <button class="secondary-button" id="clearButton" type="button">Clear results</button>
+                <button class="secondary-button" id="refreshButton" type="button">Refresh now</button>
+                <button class="secondary-button" id="resetButton" type="button">Reset</button>
+              </div>
+              <div class="live-controls">
+                <label class="live-toggle" for="autoRefreshToggle">
+                  <span class="live-toggle-copy">
+                    <strong>Live Google Sheet updates</strong>
+                    <span>Refresh the charts every 15 seconds after a sheet is loaded.</span>
+                  </span>
+                  <span class="toggle-switch">
+                    <input id="autoRefreshToggle" type="checkbox" checked />
+                  </span>
+                </label>
+                <div class="live-refresh-meta" data-tone="muted" id="liveRefreshMeta">
+                  Live updates are ready when a Google Sheet is loaded.
+                </div>
               </div>
             </form>
             <p class="subtle-note">
@@ -1256,7 +1368,17 @@
     const STATE = {
       busy: false,
       activeTab: "home",
-      currentAnalysis: null
+      currentAnalysis: null,
+      activeSourceType: "",
+      lastGoogleSheetUrl: "",
+      lastDatasetSignature: "",
+      autoRefreshEnabled: true,
+      autoRefreshIntervalMs: 15000,
+      autoRefreshTimerId: 0,
+      autoRefreshInFlight: false,
+      dataLoadToken: 0,
+      liveRefreshMessage: "Live updates are ready when a Google Sheet is loaded.",
+      liveRefreshTone: "muted"
     };
 
     function init() {
@@ -1271,7 +1393,10 @@
       dom.urlForm = document.getElementById("urlForm");
       dom.sheetsUrl = document.getElementById("sheetsUrl");
       dom.loadUrlButton = document.getElementById("loadUrlButton");
-      dom.clearButton = document.getElementById("clearButton");
+      dom.refreshButton = document.getElementById("refreshButton");
+      dom.resetButton = document.getElementById("resetButton");
+      dom.autoRefreshToggle = document.getElementById("autoRefreshToggle");
+      dom.liveRefreshMeta = document.getElementById("liveRefreshMeta");
       dom.statusBanner = document.getElementById("statusBanner");
       dom.resultsPanel = document.getElementById("resultsPanel");
       dom.emptyPanel = document.getElementById("emptyPanel");
@@ -1304,7 +1429,10 @@
       dom.browseButton.addEventListener("click", () => dom.fileInput.click());
       dom.fileInput.addEventListener("change", handleFileSelection);
       dom.urlForm.addEventListener("submit", handleUrlSubmit);
-      dom.clearButton.addEventListener("click", clearResults);
+      dom.refreshButton.addEventListener("click", handleRefreshButtonClick);
+      dom.resetButton.addEventListener("click", clearResults);
+      dom.autoRefreshToggle.addEventListener("change", handleAutoRefreshToggle);
+      dom.sheetsUrl.addEventListener("input", syncLiveRefreshUi);
 
       ["dragenter", "dragover"].forEach((eventName) => {
         dom.dropZone.addEventListener(eventName, (event) => {
@@ -1330,6 +1458,7 @@
       });
 
       switchTab("home");
+      syncLiveRefreshUi();
     }
 
     function ensureSpreadsheetLibrary() {
@@ -1358,46 +1487,231 @@
       await loadGoogleSheet(url);
     }
 
+    async function handleRefreshButtonClick() {
+      const url = dom.sheetsUrl.value.trim() || STATE.lastGoogleSheetUrl;
+      if (!url) {
+        setStatus("Load a Google Sheet first to refresh it.", "error");
+        return;
+      }
+
+      await loadGoogleSheet(url, { manualRefresh: true });
+    }
+
+    function handleAutoRefreshToggle(event) {
+      STATE.autoRefreshEnabled = event.target.checked;
+
+      if (STATE.autoRefreshEnabled) {
+        if (STATE.lastGoogleSheetUrl) {
+          syncAutoRefresh();
+          setLiveRefreshState(
+            `Live updates are on. Checking Google Sheets every ${Math.round(STATE.autoRefreshIntervalMs / 1000)} seconds.`,
+            "active"
+          );
+          setStatus("Live updates turned on.", "success");
+        } else {
+          setLiveRefreshState("Live updates will start after you load a Google Sheet.", "muted");
+          setStatus("Live updates will start after you load a Google Sheet.", "info");
+        }
+      } else {
+        stopAutoRefresh();
+        if (STATE.lastGoogleSheetUrl) {
+          setLiveRefreshState("Live updates are off. The current charts will stay on screen.", "muted");
+          setStatus("Live updates turned off.", "info");
+        } else {
+          setLiveRefreshState("Live updates are ready when a Google Sheet is loaded.", "muted");
+        }
+      }
+
+      syncLiveRefreshUi();
+    }
+
     async function loadFile(file) {
+      const loadToken = ++STATE.dataLoadToken;
+      stopAutoRefresh();
+
       try {
         setBusy(true);
         setStatus("Reading spreadsheet...", "info");
         ensureSpreadsheetLibrary();
 
         const dataset = await parseFileToDataset(file);
+        if (loadToken !== STATE.dataLoadToken) {
+          return;
+        }
+
         const analysis = analyzeRows(dataset.rows);
+        stopAutoRefresh();
+        STATE.activeSourceType = "file";
+        STATE.lastGoogleSheetUrl = "";
+        STATE.lastDatasetSignature = JSON.stringify(dataset.rows);
         renderResults(analysis, {
           sourceName: file.name,
           sourceDetail: dataset.sheetName ? `Sheet: ${dataset.sheetName}` : "Uploaded file"
         });
 
+        setLiveRefreshState("Live updates are available when you load a Google Sheet.", "muted");
+        syncLiveRefreshUi();
         setStatus(`Loaded ${file.name} successfully.`, "success");
       } catch (error) {
+        if (loadToken !== STATE.dataLoadToken) {
+          return;
+        }
+
         showError(error);
       } finally {
+        if (loadToken !== STATE.dataLoadToken) {
+          return;
+        }
+
         setBusy(false);
+        syncAutoRefresh();
+        syncLiveRefreshUi();
       }
     }
 
-    async function loadGoogleSheet(url) {
+    async function loadGoogleSheet(url, options = {}) {
+      const { manualRefresh = false, backgroundRefresh = false } = options;
+      const loadToken = ++STATE.dataLoadToken;
+
       try {
-        setBusy(true);
-        setStatus("Loading Google Sheet...", "info");
+        if (!backgroundRefresh) {
+          stopAutoRefresh();
+          setBusy(true);
+          setStatus(manualRefresh ? "Refreshing Google Sheet..." : "Loading Google Sheet...", "info");
+        }
+
         ensureSpreadsheetLibrary();
 
         const dataset = await parseGoogleSheetToDataset(url);
-        const analysis = analyzeRows(dataset.rows);
-        renderResults(analysis, {
-          sourceName: "Google Sheet",
-          sourceDetail: dataset.sourceDetail
-        });
+        if (loadToken !== STATE.dataLoadToken) {
+          return;
+        }
 
-        setStatus("Google Sheet loaded successfully.", "success");
+        const analysis = analyzeRows(dataset.rows);
+        const nextSignature = JSON.stringify(dataset.rows);
+        const changed =
+          STATE.activeSourceType !== "google" ||
+          STATE.lastGoogleSheetUrl !== url ||
+          STATE.lastDatasetSignature !== nextSignature;
+
+        STATE.activeSourceType = "google";
+        STATE.lastGoogleSheetUrl = url;
+        STATE.lastDatasetSignature = nextSignature;
+        dom.sheetsUrl.value = url;
+
+        if (changed) {
+          renderResults(analysis, {
+            sourceName: "Google Sheet",
+            sourceDetail: dataset.sourceDetail
+          });
+        }
+
+        const refreshLabel = formatRefreshTime();
+        if (STATE.autoRefreshEnabled) {
+          setLiveRefreshState(
+            backgroundRefresh
+              ? changed
+                ? `Live updates on. Charts refreshed at ${refreshLabel}.`
+                : `Live updates on. Checked at ${refreshLabel}; no sheet changes found.`
+              : `Live updates on. Last refresh ${refreshLabel}.`,
+            changed ? "success" : "active"
+          );
+        } else {
+          setLiveRefreshState(`Google Sheet loaded. Auto-refresh is off. Last refresh ${refreshLabel}.`, "muted");
+        }
+
+        if (!backgroundRefresh) {
+          setStatus(
+            manualRefresh ? "Google Sheet refreshed." : "Google Sheet loaded successfully.",
+            "success"
+          );
+        }
       } catch (error) {
-        showError(error);
+        if (loadToken !== STATE.dataLoadToken) {
+          return;
+        }
+
+        if (backgroundRefresh) {
+          const message = error instanceof Error ? error.message : "Background refresh failed.";
+          setLiveRefreshState(`Live update failed at ${formatRefreshTime()}: ${message}`, "error");
+        } else {
+          showError(error);
+        }
       } finally {
-        setBusy(false);
+        if (loadToken !== STATE.dataLoadToken) {
+          return;
+        }
+
+        if (!backgroundRefresh) {
+          setBusy(false);
+          syncAutoRefresh();
+        }
+
+        syncLiveRefreshUi();
       }
+    }
+
+    function syncAutoRefresh() {
+      stopAutoRefresh();
+
+      if (!STATE.autoRefreshEnabled || !STATE.lastGoogleSheetUrl) {
+        return;
+      }
+
+      STATE.autoRefreshTimerId = window.setTimeout(runAutoRefreshCycle, STATE.autoRefreshIntervalMs);
+    }
+
+    function stopAutoRefresh() {
+      if (STATE.autoRefreshTimerId) {
+        window.clearTimeout(STATE.autoRefreshTimerId);
+        STATE.autoRefreshTimerId = 0;
+      }
+    }
+
+    async function runAutoRefreshCycle() {
+      STATE.autoRefreshTimerId = 0;
+
+      if (!STATE.autoRefreshEnabled || !STATE.lastGoogleSheetUrl || STATE.autoRefreshInFlight) {
+        syncLiveRefreshUi();
+        return;
+      }
+
+      STATE.autoRefreshInFlight = true;
+      setLiveRefreshState("Checking Google Sheets for new form responses...", "active");
+      syncLiveRefreshUi();
+
+      try {
+        await loadGoogleSheet(STATE.lastGoogleSheetUrl, { backgroundRefresh: true });
+      } finally {
+        STATE.autoRefreshInFlight = false;
+        syncLiveRefreshUi();
+        syncAutoRefresh();
+      }
+    }
+
+    function setLiveRefreshState(message, tone = "muted") {
+      STATE.liveRefreshMessage = message;
+      STATE.liveRefreshTone = tone;
+      syncLiveRefreshUi();
+    }
+
+    function syncLiveRefreshUi() {
+      const hasRefreshTarget = Boolean(dom.sheetsUrl.value.trim() || STATE.lastGoogleSheetUrl);
+
+      dom.autoRefreshToggle.checked = STATE.autoRefreshEnabled;
+      dom.autoRefreshToggle.disabled = STATE.busy && !STATE.autoRefreshInFlight;
+      dom.refreshButton.disabled = STATE.busy || STATE.autoRefreshInFlight || !hasRefreshTarget;
+      dom.resetButton.disabled = STATE.busy || STATE.autoRefreshInFlight;
+      dom.liveRefreshMeta.textContent = STATE.liveRefreshMessage;
+      dom.liveRefreshMeta.dataset.tone = STATE.liveRefreshTone;
+    }
+
+    function formatRefreshTime() {
+      return new Date().toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit"
+      });
     }
 
     async function parseFileToDataset(file) {
@@ -2470,7 +2784,13 @@
     }
 
     function clearResults() {
+      STATE.dataLoadToken += 1;
+      stopAutoRefresh();
       STATE.currentAnalysis = null;
+      STATE.activeSourceType = "";
+      STATE.lastGoogleSheetUrl = "";
+      STATE.lastDatasetSignature = "";
+      STATE.autoRefreshInFlight = false;
       dom.fileInput.value = "";
       dom.sheetsUrl.value = "";
       dom.resultsPanel.hidden = true;
@@ -2486,16 +2806,20 @@
       dom.histogramGrid.innerHTML = "";
       dom.histogramSummary.textContent = "";
       dom.histogramMeta.textContent = "";
+      setLiveRefreshState("Live updates are ready when a Google Sheet is loaded.", "muted");
       syncFullscreenButtons();
       updateHistogramPanels();
+      syncLiveRefreshUi();
       setStatus("Waiting for a spreadsheet or Google Sheets link.", "info");
     }
 
     function setBusy(isBusy) {
       STATE.busy = isBusy;
-      [dom.browseButton, dom.loadUrlButton, dom.clearButton].forEach((button) => {
+      [dom.browseButton, dom.loadUrlButton, dom.refreshButton, dom.resetButton].forEach((button) => {
         button.disabled = isBusy;
       });
+
+      dom.autoRefreshToggle.disabled = isBusy && !STATE.autoRefreshInFlight;
     }
 
     function setStatus(message, type) {
